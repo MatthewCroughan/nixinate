@@ -1,20 +1,5 @@
 {
   "nodes": {
-    "examples": {
-      "inputs": {
-        "nixinate": "nixinate",
-        "nixpkgs": "nixpkgs_2"
-      },
-      "locked": {
-        "narHash": "sha256-OsFQxO7h4YHrRQX8oHIjvgjTbeJx0oIP+pOIpfiwMiU=",
-        "path": "./examples",
-        "type": "path"
-      },
-      "original": {
-        "path": "./examples",
-        "type": "path"
-      }
-    },
     "nixinate": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -61,26 +46,10 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
-      "locked": {
-        "lastModified": 1640887906,
-        "narHash": "sha256-Eupk1UlNicCD2UNZuEKt6yhE6kFWAxXM/HyziOjG9CA=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "8a053bc2255659c5ca52706b9e12e76a8f50dbdd",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "ref": "nixos-21.11",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
-        "examples": "examples",
-        "nixpkgs": "nixpkgs_3"
+        "nixinate": "nixinate",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },
