@@ -31,6 +31,7 @@ Below is a minimal example:
             _module.args.nixinate = {
               host = "itchy.scratchy.com";
               sshUser = "matthew";
+              buildOn = "remote"; # valid args are "local" or "remote"
             };
           }
           # ... other configuration ...

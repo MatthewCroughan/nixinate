@@ -21,14 +21,26 @@
               set -e
               SSH_USER=${flake.nixosConfigurations.${machine}._module.args.nixinate.sshUser}
               SSH_HOST=${flake.nixosConfigurations.${machine}._module.args.nixinate.host}
+              BUILD_ON=${flake.nixosConfigurations.${machine}._module.args.nixinate.buildOn}
+              SYSTEM_CLOSURE=${flake}#nixosConfigurations.${machine}.config.system.build.toplevel
               
               echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
               echo "👤 SSH User: $SSH_USER"
               echo "🌐 SSH Host: $SSH_HOST"
-              echo "🚀 Sending flake to ${machine} via rsync:"
-              ( set -x; ${final.rsync}/bin/rsync -q -vz --recursive --zc=zstd ${flake}/* $SSH_USER@$SSH_HOST:/tmp/nixcfg/ )
-              echo "🤞 Activating configuration on ${machine} via ssh:"
-              ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST 'sudo nixos-rebuild switch --flake /tmp/nixcfg#${machine}' )
+              if [ $BUILD_ON = "remote" ]; then
+                echo "🚀 Sending flake to ${machine} via rsync:"
+                ( set -x; ${final.rsync}/bin/rsync -q -vz --recursive --zc=zstd ${flake}/* $SSH_USER@$SSH_HOST:/tmp/nixcfg/ )
+                echo "🤞 Activating configuration on ${machine} via ssh:"
+                ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST 'sudo nixos-rebuild switch --flake /tmp/nixcfg#${machine}' )
+              elif [ $BUILD_ON = "local" ]; then
+                echo "🔨 Building system closure locally and copying it to remote store:"
+                ( set -x; ${final.nixFlakes}/bin/nix copy --to ssh://$SSH_USER@$SSH_HOST $SYSTEM_CLOSURE )
+                echo "🤞 Activating configuration on ${machine} via ssh:"
+                SYSTEM_CLOSURE_PATH=$(${final.nixFlakes}/bin/nix path-info $SYSTEM_CLOSURE)
+                ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST "sudo $SYSTEM_CLOSURE_PATH/bin/switch-to-configuration switch" )
+              else
+                echo "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'"
+              fi
             '';
           in
           {
