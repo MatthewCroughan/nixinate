@@ -14,6 +14,7 @@
             _module.args.nixinate = {
               host = "itchy.scratchy.com";
               sshUser = "matthew";
+              buildOn = "local"; # valid args are "local" or "remote"
             };
           }
           # ... other configuration ...
