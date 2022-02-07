@@ -1,7 +1,7 @@
 {
   description = "Nixinate your systems 🕶️";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-21.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     examples.url = "path:./examples";
   };
   outputs = { self, nixpkgs, examples, ... }:
@@ -22,8 +22,6 @@
               SSH_USER=${flake.nixosConfigurations.${machine}._module.args.nixinate.sshUser}
               SSH_HOST=${flake.nixosConfigurations.${machine}._module.args.nixinate.host}
               BUILD_ON=${flake.nixosConfigurations.${machine}._module.args.nixinate.buildOn}
-              SYSTEM_CLOSURE=${flake}#nixosConfigurations.${machine}.config.system.build.toplevel
-              
               echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
               echo "👤 SSH User: $SSH_USER"
               echo "🌐 SSH Host: $SSH_HOST"
@@ -33,11 +31,8 @@
                 echo "🤞 Activating configuration on ${machine} via ssh:"
                 ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST 'sudo nixos-rebuild switch --flake /tmp/nixcfg#${machine}' )
               elif [ $BUILD_ON = "local" ]; then
-                echo "🔨 Building system closure locally and copying it to remote store:"
-                ( set -x; ${final.nixFlakes}/bin/nix copy --to ssh://$SSH_USER@$SSH_HOST $SYSTEM_CLOSURE )
-                echo "🤞 Activating configuration on ${machine} via ssh:"
-                SYSTEM_CLOSURE_PATH=$(${final.nixFlakes}/bin/nix path-info $SYSTEM_CLOSURE)
-                ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST "sudo $SYSTEM_CLOSURE_PATH/bin/switch-to-configuration switch" )
+                echo "🔨 Building system closure locally, copying it to remote store and activating it:"
+                ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild switch --flake ${flake}#${machine} --target-host $SSH_USER@$SSH_HOST --use-remote-sudo )
               else
                 echo "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'"
               fi
