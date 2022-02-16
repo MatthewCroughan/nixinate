@@ -21,7 +21,7 @@
               inherit (builtins) abort;
 
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
-              user = n.sshUser;
+              user = n.sshUser or "root";
               host = n.host;
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
