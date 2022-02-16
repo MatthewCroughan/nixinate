@@ -11,7 +11,7 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
     in rec
-    { 
+    {
       overlay = final: prev: {
         generateApps = flake:
           let
@@ -43,8 +43,8 @@
                (
                  nixpkgs.lib.genAttrs
                    validMachines
-                   (x: 
-                     { 
+                   (x:
+                     {
                        type = "app";
                        program = toString (mkDeployScript x);
                      }
@@ -55,4 +55,4 @@
       nixinate = forAllSystems (system: nixpkgsFor.${system}.generateApps);
       apps = nixinate.x86_64-linux examples;
     };
-}     
+}
