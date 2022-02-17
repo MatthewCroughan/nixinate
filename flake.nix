@@ -11,48 +11,66 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
     in rec
-    { 
+    {
       overlay = final: prev: {
         generateApps = flake:
           let
             machines = builtins.attrNames flake.nixosConfigurations;
             validMachines = final.lib.remove "" (final.lib.forEach machines (x: final.lib.optionalString (flake.nixosConfigurations."${x}"._module.args ? nixinate) "${x}" ));
-            mkDeployScript = machine: final.writeScript "deploy-${machine}.sh" ''
-              set -e
-              SSH_USER=${flake.nixosConfigurations.${machine}._module.args.nixinate.sshUser}
-              SSH_HOST=${flake.nixosConfigurations.${machine}._module.args.nixinate.host}
-              BUILD_ON=${flake.nixosConfigurations.${machine}._module.args.nixinate.buildOn}
-              echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
-              echo "👤 SSH User: $SSH_USER"
-              echo "🌐 SSH Host: $SSH_HOST"
-              if [ $BUILD_ON = "remote" ]; then
+            mkDeployScript = { machine, dryRun }: let
+              inherit (builtins) abort;
+
+              n = flake.nixosConfigurations.${machine}._module.args.nixinate;
+              user = n.sshUser or "root";
+              host = n.host;
+              where = n.buildOn or "remote";
+              remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
+              switch = if dryRun then "dry-activate" else "switch";
+              script = ''
+                set -e
+                echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
+                echo "👤 SSH User: ${user}"
+                echo "🌐 SSH Host: ${host}"
+              '' + (if remote then ''
                 echo "🚀 Sending flake to ${machine} via rsync:"
-                ( set -x; ${final.rsync}/bin/rsync -q -vz --recursive --zc=zstd ${flake}/* $SSH_USER@$SSH_HOST:/tmp/nixcfg/ )
+                ( set -x; ${final.rsync}/bin/rsync -q -vz --recursive --zc=zstd ${flake}/* ${user}@${host}:/tmp/nixcfg/ )
                 echo "🤞 Activating configuration on ${machine} via ssh:"
-                ( set -x; ${final.openssh}/bin/ssh -t $SSH_USER@$SSH_HOST 'sudo nixos-rebuild switch --flake /tmp/nixcfg#${machine}' )
-              elif [ $BUILD_ON = "local" ]; then
+                ( set -x; ${final.openssh}/bin/ssh -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake /tmp/nixcfg#${machine}' )
+              '' else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
-                ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild switch --flake ${flake}#${machine} --target-host $SSH_USER@$SSH_HOST --use-remote-sudo )
-              else
-                echo "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'"
-              fi
-            '';
+                ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo )
+              '');
+            in final.writeScript "deploy-${machine}.sh" script;
           in
           {
              nixinate =
                (
                  nixpkgs.lib.genAttrs
                    validMachines
-                   (x: 
-                     { 
+                   (x:
+                     {
                        type = "app";
-                       program = toString (mkDeployScript x);
+                       program = toString (mkDeployScript {
+                         machine = x;
+                         dryRun = false;
+                       });
                      }
                    )
+                   // nixpkgs.lib.genAttrs
+                      (map (a: a + "-dry-run") validMachines)
+                      (x:
+                        {
+                          type = "app";
+                          program = toString (mkDeployScript {
+                            machine = x;
+                            dryRun = true;
+                          });
+                        }
+                      )
                );
           };
         };
       nixinate = forAllSystems (system: nixpkgsFor.${system}.generateApps);
       apps = nixinate.x86_64-linux examples;
     };
-}     
+}
