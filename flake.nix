@@ -32,10 +32,10 @@
                 echo "👤 SSH User: ${user}"
                 echo "🌐 SSH Host: ${host}"
               '' + (if remote then ''
-                echo "🚀 Sending flake to ${machine} via rsync:"
-                ( set -x; ${final.rsync}/bin/rsync -q -vz --recursive --zc=zstd ${flake}/* ${user}@${host}:/tmp/nixcfg/ )
+                echo "🚀 Sending flake to ${machine} via nix copy:"
+                ( set -x; ${final.nix}/bin/nix copy ${flake} --to ssh://${user}@${host} )
                 echo "🤞 Activating configuration on ${machine} via ssh:"
-                ( set -x; ${final.openssh}/bin/ssh -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake /tmp/nixcfg#${machine}' )
+                ( set -x; ${final.openssh}/bin/ssh -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake ${flake}#${machine}' )
               '' else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
                 ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo )
