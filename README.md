@@ -64,7 +64,7 @@ To finally execute the deployment script, use `nix run .#apps.nixinate.myMachine
 🚀 Deploying nixosConfigurations.myMachine from /nix/store/279p8aaclmng8kc3mdmrmi6q3n76r1i7-source
 👤 SSH User: matthew
 🌐 SSH Host: itchy.scratchy.com
-🚀 Sending flake to myMachine via rsync:
+🚀 Sending flake to myMachine via nix copy:
 (matthew@itchy.scratchy.com) Password: 
 🤞 Activating configuration on myMachine via ssh:
 (matthew@itchy.scratchy.com) Password: 
