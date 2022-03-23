@@ -2,9 +2,8 @@
   description = "Nixinate your systems 🕶️";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    examples.url = "path:./examples";
   };
-  outputs = { self, nixpkgs, examples, ... }:
+  outputs = { self, nixpkgs, ... }:
     let
       version = builtins.substring 0 8 self.lastModifiedDate;
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -71,6 +70,5 @@
           };
         };
       nixinate = forAllSystems (system: nixpkgsFor.${system}.generateApps);
-      apps = nixinate.x86_64-linux examples;
     };
 }
