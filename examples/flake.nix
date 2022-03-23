@@ -1,7 +1,9 @@
+# TODO: use a relative path to nixinate, so that everything is contained within this repo.
+# This would rely upon https://github.com/NixOS/nix/pull/5437 being merged.
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-21.11";
-    nixinate.url = "path:///etc/nixos/nixinate";
+    nixinate.url = "github:matthewcroughan/nixinate";
   };
 
   outputs = { self, nixpkgs, nixinate }: {
@@ -10,7 +12,7 @@
       myMachine = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
-          { 
+          {
             _module.args.nixinate = {
               host = "itchy.scratchy.com";
               sshUser = "matthew";
