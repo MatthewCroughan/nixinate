@@ -61,7 +61,7 @@
                         {
                           type = "app";
                           program = toString (mkDeployScript {
-                            machine = x;
+                            machine = nixpkgs.lib.removeSuffix "-dry-run" x;
                             dryRun = true;
                           });
                         }
