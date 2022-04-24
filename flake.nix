@@ -3,12 +3,15 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
-  outputs = { self, nixpkgs, ... }:
+  outputs = { self, nixpkgs, ... }@inputs:
     let
       version = builtins.substring 0 8 self.lastModifiedDate;
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
+      forSystems = systems: f:
+        nixpkgs.lib.genAttrs systems
+        (system: f system nixpkgs.legacyPackages.${system});
+      forAllSystems = forSystems supportedSystems;
+      nixpkgsFor = forAllSystems (system: pkgs: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
     in rec
     {
       overlay = final: prev: {
@@ -69,6 +72,19 @@
                );
           };
         };
-      nixinate = forAllSystems (system: nixpkgsFor.${system}.generateApps);
+      nixinate = forAllSystems (system: pkgs: nixpkgsFor.${system}.generateApps);
+      checks = forAllSystems (system: pkgs:
+        let
+          vmTests = import ./tests {
+            makeTest = (import (nixpkgs + "/nixos/lib/testing-python.nix") { inherit system; }).makeTest;
+            inherit pkgs inputs;
+          };
+        in
+        pkgs.lib.optionalAttrs pkgs.stdenv.isLinux vmTests # vmTests can only be ran on Linux, so append them only if on Linux.
+        //
+        {
+          # Other checks here...
+        }
+      );
     };
 }
