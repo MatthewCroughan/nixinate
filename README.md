@@ -32,6 +32,7 @@ Below is a minimal example:
               host = "itchy.scratchy.com";
               sshUser = "matthew";
               buildOn = "remote"; # valid args are "local" or "remote"
+	            hermetic = false;
             };
           }
           # ... other configuration ...
@@ -76,3 +77,30 @@ reloading user units for matthew...
 setting up tmpfiles
 Connection to itchy.scratchy.com closed.
 ```
+
+# Available arguments via `_module.args.nixinate`
+
+- `host` *`string`*
+
+   A string representing the hostname or IP address of a machine to connect to
+   via ssh.
+
+- `sshUser` *`string`*
+
+   A string representing the username a machine to connect to via ssh.
+
+- `buildOn` *`"remote"`* or *`"local"`*
+
+  - `"remote"`
+
+    Push the flake to the remote, build and activate entirely remotely,
+    returning logs via SSH.
+
+  - `"local"`
+
+    Build the system closure locally, copy to the remote and activate.
+
+- `hermetic` *`bool`*
+
+  Whether to copy Nix to the remote for usage when building and activating,
+  instead of using the Nix which is already installed on the remote.

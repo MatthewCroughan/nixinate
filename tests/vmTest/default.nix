@@ -1,5 +1,6 @@
 { pkgs, makeTest, inputs }:
 let
+  inherit (pkgs) lib;
   # Return a store path with a closure containing everything including
   # derivations and all build dependency outputs, all the way down.
   allDrvOutputs = pkg:
@@ -22,7 +23,7 @@ let
     ((import (path + "/flake.nix")).outputs (inputs // {self = r;}));
   in
     r;
-  mkNixinateTest = buildOn:
+  mkNixinateTest = { buildOn, hermetic ? false, ... }:
     let
       exampleFlake = pkgs.writeTextFile {
         name = "nixinate-example-flake";
@@ -41,6 +42,7 @@ let
                         host = "nixinatee";
                         sshUser = "nixinator";
                         buildOn = "${buildOn}"; # valid args are "local" or "remote"
+                        hermetic = ${lib.boolToString hermetic}; # valid args are true or false
                       };
                     }
                   ];
@@ -66,7 +68,9 @@ let
           ];
           virtualisation = {
             writableStore = true;
-            additionalPaths = [] ++ pkgs.lib.optional (buildOn == "remote") (allDrvOutputs exampleSystem);
+            additionalPaths = []
+              ++ lib.optional (buildOn == "remote") (allDrvOutputs exampleSystem)
+              ++ lib.optional (hermetic == true) (pkgs.nixinate.nixos-rebuild);
           };
         };
         nixinator = { ... }: {
@@ -77,7 +81,7 @@ let
             additionalPaths = [
               (allDrvOutputs exampleSystem)
             ]
-              ++ pkgs.lib.optional (buildOn == "remote") exampleFlake;
+              ++ lib.optional (buildOn == "remote") exampleFlake;
           };
         };
       };
@@ -103,6 +107,8 @@ let
     };
 in
 {
-  local = (mkNixinateTest "local");
-  remote = (mkNixinateTest "remote");
+  local = (mkNixinateTest { buildOn = "local"; });
+  remote = (mkNixinateTest { buildOn = "remote"; });
+  localHermetic = (mkNixinateTest { buildOn = "local"; hermetic = true; });
+  remoteHermetic = (mkNixinateTest { buildOn = "remote"; hermetic = true; });
 }
