@@ -32,7 +32,7 @@ let
             outputs = { self, nixpkgs }:
               let
                 makeTest = (import (nixpkgs + "/nixos/lib/testing-python.nix") { system = "${pkgs.hostPlatform.system}"; }).makeTest;
-                baseConfig = ((makeTest { nodes.baseConfig = { ... }: {}; testScript = "";}).nodes {}).baseConfig.extendModules {
+                baseConfig = ((makeTest { nodes.baseConfig = { ... }: {}; testScript = "";}).nodes).baseConfig.extendModules {
                   modules = [
                     ${builtins.readFile ./nixinateeBase.nix}
                     ${builtins.readFile ./nixinateeAdditional.nix}
