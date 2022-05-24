@@ -14,6 +14,7 @@
       nixpkgsFor = forAllSystems (system: pkgs: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
     in rec
     {
+      herculesCI.ciSystems = [ "x86_64-linux" ];
       overlay = final: prev: {
         generateApps = flake:
           let
