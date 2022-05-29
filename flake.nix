@@ -29,6 +29,28 @@
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               switch = if dryRun then "dry-activate" else "switch";
+              rollbackScript = let
+                inherit (builtins) toString;
+                inherit (final.lib.strings) optionalString;
+
+                r = n.rollback or {};
+                enabled = r.enabled or true;
+                init = r.init or 500;
+                limit = r.limit or 8;
+                timeout = r.timeout or 10;
+             in optionalString enabled ''
+                rollbackAccumulator=${toString limit}
+                exponent=0
+                until ${final.openssh}/bin/ssh -o ConnectTimeout=${toString timeout} -t ${user}@${host} 'sudo rm /tmp/.nixinate-deploy-success'; do
+                  rollbackWait=$((${toString init} * (2 ** exponent++)))
+                  echo "Could not access ${machine}, trying again in $rollbackWait milliseconds." &>2
+                  sleep $((rollbackWait / 1000))
+                  if [[ $((--rollbackAccumulator)) == 0 ]];  # --rollbackAccumulator may appear as a flag, however it's inside of $(()), so it decrements the value and yields it.
+                    echo "Cannot access ${machine}. Rollback will happen." &>2
+                    exit 1
+                  ]];
+                done
+              '';
               script = ''
                 set -e
                 echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
@@ -42,7 +64,9 @@
               '' else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
                 ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo )
-              '');
+              '') + rollbackScript + ''
+                echo "${machine} has finished deploying."
+	      '';
             in final.writeScript "deploy-${machine}.sh" script;
           in
           {
