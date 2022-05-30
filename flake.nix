@@ -16,32 +16,49 @@
     {
       herculesCI.ciSystems = [ "x86_64-linux" ];
       overlay = final: prev: {
+        nixinate = {
+          nix = prev.pkgs.writeShellScriptBin "nix"
+            ''${final.nixVersions.unstable}/bin/nix --experimental-features "nix-command flakes" "$@"'';
+          nixos-rebuild = prev.nixos-rebuild.override { inherit (final) nix; };
+        };
         generateApps = flake:
           let
             machines = builtins.attrNames flake.nixosConfigurations;
             validMachines = final.lib.remove "" (final.lib.forEach machines (x: final.lib.optionalString (flake.nixosConfigurations."${x}"._module.args ? nixinate) "${x}" ));
             mkDeployScript = { machine, dryRun }: let
               inherit (builtins) abort;
+              inherit (final.lib) getExe;
+              nix = "${getExe final.nix}";
+              nixos-rebuild = "${getExe final.nixos-rebuild}";
+              openssh = "${getExe final.openssh}";
 
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
+              hermetic = n.hermetic or false;
               user = n.sshUser or "root";
               host = n.host;
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               switch = if dryRun then "dry-activate" else "switch";
-              script = ''
+              script =
+              ''
                 set -e
                 echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
                 echo "👤 SSH User: ${user}"
                 echo "🌐 SSH Host: ${host}"
               '' + (if remote then ''
                 echo "🚀 Sending flake to ${machine} via nix copy:"
-                ( set -x; ${final.nix}/bin/nix copy ${flake} --to ssh://${user}@${host} )
-                echo "🤞 Activating configuration on ${machine} via ssh:"
-                ( set -x; ${final.openssh}/bin/ssh -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake ${flake}#${machine}' )
+                ( set -x; ${nix} copy ${flake} --to ssh://${user}@${host} )
+              '' + (if hermetic then ''
+                echo "🤞 Activating configuration hermetically on ${machine} via ssh:"
+                ( set -x; ${nix} build ${nixos-rebuild} --no-link --store ssh://${user}@${host} )
+                ( set -x; ${openssh} -t ${user}@${host} 'sudo ${nixos-rebuild} ${switch} --flake ${flake}#${machine}' )
               '' else ''
+                echo "🤞 Activating configuration non-hermetically on ${machine} via ssh:"
+                ( set -x; ${openssh} -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake ${flake}#${machine}' )
+              '')
+              else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
-                ( set -x; NIX_SSHOPTS="-t" ${final.nixos-rebuild}/bin/nixos-rebuild ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo )
+                ( set -x; NIX_SSHOPTS="-t" ${nixos-rebuild} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo )
               '');
             in final.writeScript "deploy-${machine}.sh" script;
           in
@@ -78,7 +95,7 @@
         let
           vmTests = import ./tests {
             makeTest = (import (nixpkgs + "/nixos/lib/testing-python.nix") { inherit system; }).makeTest;
-            inherit pkgs inputs;
+            inherit inputs; pkgs = nixpkgsFor.${system};
           };
         in
         pkgs.lib.optionalAttrs pkgs.stdenv.isLinux vmTests # vmTests can only be ran on Linux, so append them only if on Linux.
