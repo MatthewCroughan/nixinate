@@ -30,6 +30,7 @@
               inherit (final.lib) getExe;
               nix = "${getExe final.nix}";
               nixos-rebuild = "${getExe final.nixos-rebuild}";
+              nixos-rebuild-drvPath = final.nixos-rebuild.drvPath;
               openssh = "${getExe final.openssh}";
 
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
@@ -50,8 +51,8 @@
                 ( set -x; ${nix} copy ${flake} --to ssh://${user}@${host} )
               '' + (if hermetic then ''
                 echo "🤞 Activating configuration hermetically on ${machine} via ssh:"
-                ( set -x; ${nix} build ${nixos-rebuild} --no-link --store ssh://${user}@${host} )
-                ( set -x; ${openssh} -t ${user}@${host} 'sudo ${nixos-rebuild} ${switch} --flake ${flake}#${machine}' )
+                ( set -x; ${nix} copy --derivation ${nixos-rebuild} --to ssh://${user}@${host} )
+                ( set -x; ${openssh} -t ${user}@${host} 'sudo nix-store --realise ${nixos-rebuild-drvPath} && sudo ${nixos-rebuild} ${switch} --flake ${flake}#${machine}' )
               '' else ''
                 echo "🤞 Activating configuration non-hermetically on ${machine} via ssh:"
                 ( set -x; ${openssh} -t ${user}@${host} 'sudo nixos-rebuild ${switch} --flake ${flake}#${machine}' )
