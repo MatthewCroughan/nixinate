@@ -32,7 +32,7 @@ Below is a minimal example:
               host = "itchy.scratchy.com";
               sshUser = "matthew";
               buildOn = "remote"; # valid args are "local" or "remote"
-	            hermetic = false;
+              hermetic = false;
             };
           }
           # ... other configuration ...
@@ -47,7 +47,7 @@ Each `nixosConfiguration` you have configured should have a deployment script in
 `apps.nixinate`, visible in `nix flake show` like this:
 
 ```
-$ nix flake show 
+$ nix flake show
 git+file:///etc/nixos
 ├───apps
 │   └───nixinate
@@ -66,10 +66,10 @@ To finally execute the deployment script, use `nix run .#apps.nixinate.myMachine
 👤 SSH User: matthew
 🌐 SSH Host: itchy.scratchy.com
 🚀 Sending flake to myMachine via nix copy:
-(matthew@itchy.scratchy.com) Password: 
+(matthew@itchy.scratchy.com) Password:
 🤞 Activating configuration on myMachine via ssh:
-(matthew@itchy.scratchy.com) Password: 
-[sudo] password for matthew: 
+(matthew@itchy.scratchy.com) Password:
+[sudo] password for matthew:
 building the system configuration...
 activating the configuration...
 setting up /etc...
