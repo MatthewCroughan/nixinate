@@ -104,3 +104,9 @@ Connection to itchy.scratchy.com closed.
 
   Whether to copy Nix to the remote for usage when building and activating,
   instead of using the Nix which is already installed on the remote.
+
+# Project Principles
+
+* No Premature Optimization: Make it work, then optimize it later if the
+  optimization is taking a lot of time to figure out now.
+* KISS: Keep it simple, stupid. Unnecesary complexity should be avoided.
