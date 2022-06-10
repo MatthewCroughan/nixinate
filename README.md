@@ -32,6 +32,7 @@ Below is a minimal example:
               host = "itchy.scratchy.com";
               sshUser = "matthew";
               buildOn = "remote"; # valid args are "local" or "remote"
+              substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
               hermetic = false;
             };
           }
@@ -104,6 +105,13 @@ Connection to itchy.scratchy.com closed.
 
   Whether to copy Nix to the remote for usage when building and activating,
   instead of using the Nix which is already installed on the remote.
+
+- `substituteOnTarget` *`bool`*
+
+  Whether to fetch closures and paths from the remote, even when building
+  locally. This makes sense in most cases, because the remote will have already
+  built a lot of the paths from the previous deployment. However, if the remote
+  has a slow upload bandwidth, this would not be a good idea to enable.
 
 # Project Principles
 
