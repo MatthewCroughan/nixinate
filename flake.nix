@@ -42,6 +42,7 @@
               substituteOnTarget = n.substituteOnTarget or false;
               switch = if dryRun then "dry-activate" else "switch";
               nixOptions = concatStringsSep " " (n.nixOptions or []);
+              reboot = if ! dryRun then n.reboot or false else false;
 
               script =
               ''
@@ -64,7 +65,13 @@
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
                 ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
 
-              '');
+              '') + (if reboot then  ''
+                ( if ! ${openssh} -t ${user}@${host} '[ "$(readlink /run/booted-system/{initrd,kernel,kernel-modules})" = "$(readlink /nix/var/nix/profiles/system/{initrd,kernel,kernel-modules})" ]'
+                then
+                  echo "🙈 Rebooting host due to newer kernel:"
+                  set -x; ${openssh} -t ${user}@${host} "sudo reboot"
+                fi )
+              '' else "");
             in final.writeScript "deploy-${machine}.sh" script;
           in
           {

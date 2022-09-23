@@ -113,6 +113,11 @@ Connection to itchy.scratchy.com closed.
   built a lot of the paths from the previous deployment. However, if the remote
   has a slow upload bandwidth, this would not be a good idea to enable.
 
+- `reboot` *`bool`*
+
+  Whether to reboot the remote host if a newer kernel is available. Defaults to
+  false.
+
 # Project Principles
 
 * No Premature Optimization: Make it work, then optimize it later if the
