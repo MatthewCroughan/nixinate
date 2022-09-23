@@ -40,6 +40,7 @@
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               substituteOnTarget = n.substituteOnTarget or false;
               switch = if dryRun then "dry-activate" else "switch";
+              reboot = if ! dryRun then n.reboot or false else false;
               script =
               ''
                 set -e
@@ -60,7 +61,13 @@
               else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
                 ( set -x; NIX_SSHOPTS="-t" flock -w 60 /dev/shm/nixinate-${machine} -c '${nixos-rebuild} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"}' )
-              '');
+              '') + (if reboot then  ''
+                ( if ! ${openssh} -t ${user}@${host} '[ "$(readlink /run/booted-system/{initrd,kernel,kernel-modules})" = "$(readlink /nix/var/nix/profiles/system/{initrd,kernel,kernel-modules})" ]'
+                then
+                  echo "🙈 Rebooting host due to newer kernel:"
+                  set -x; ${openssh} -t ${user}@${host} "sudo reboot"
+                fi )
+              '' else "");
             in final.writeScript "deploy-${machine}.sh" script;
           in
           {
