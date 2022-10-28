@@ -70,7 +70,8 @@ let
             writableStore = true;
             additionalPaths = []
               ++ lib.optional (buildOn == "remote") (allDrvOutputs exampleSystem)
-              ++ lib.optional (hermetic == true) (pkgs.nixinate.nixos-rebuild);
+              ++ lib.optional (hermetic == true) (pkgs.nixinate.nixos-rebuild.drvPath)
+              ++ lib.optional (hermetic == true) (pkgs.flock.drvPath);
           };
         };
         nixinator = { ... }: {
@@ -81,7 +82,8 @@ let
             additionalPaths = [
               (allDrvOutputs exampleSystem)
             ]
-              ++ lib.optional (buildOn == "remote") exampleFlake;
+              ++ lib.optional (buildOn == "remote") exampleFlake
+              ++ lib.optional (hermetic == true) pkgs.flock.drvPath;
           };
         };
       };
