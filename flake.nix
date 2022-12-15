@@ -34,7 +34,7 @@
               flock = "${getExe final.flock}";
 
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
-              hermetic = n.hermetic or false;
+              hermetic = n.hermetic or true;
               user = n.sshUser or "root";
               host = n.host;
               where = n.buildOn or "remote";
