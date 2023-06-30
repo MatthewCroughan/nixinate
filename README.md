@@ -17,7 +17,7 @@ Below is a minimal example:
 ```nix
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-21.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
     nixinate.url = "github:matthewcroughan/nixinate";
   };
 
@@ -25,6 +25,7 @@ Below is a minimal example:
     apps = nixinate.nixinate.x86_64-linux self;
     nixosConfigurations = {
       myMachine = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
         modules = [
           (import ./my-configuration.nix)
           {
