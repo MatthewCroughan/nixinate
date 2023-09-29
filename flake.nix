@@ -38,7 +38,7 @@
               user = n.sshUser or "root";
               host = n.host or "";
               sshConfigHost = n.sshConfigHost or "";
-              userHost = if sshConfigHost != "" then sshConfigHost else if host != "" then "${user}@${host}" else abort "_module.args.nixinate.host or _module.args.nixinate.sshUserHost must be set";
+              userHost = if sshConfigHost != "" then sshConfigHost else if host != "" then "${user}@${host}" else abort "_module.args.nixinate.host or _module.args.nixinate.sshConfigHost must be set";
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               substituteOnTarget = n.substituteOnTarget or false;
