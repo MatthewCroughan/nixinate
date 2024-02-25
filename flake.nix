@@ -65,7 +65,7 @@
                 ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
 
               '');
-            in final.writeScript "deploy-${machine}.sh" script;
+            in final.writeShellScript "deploy-${machine}.sh" script;
           in
           {
              nixinate =
