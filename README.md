@@ -32,6 +32,10 @@ Below is a minimal example:
             _module.args.nixinate = {
               host = "itchy.scratchy.com";
               sshUser = "matthew";
+
+              # Or optionally pass a 'short' hostname that is defined in ssh config
+              sshConfigHost = "itchy-scratchy";
+
               buildOn = "remote"; # valid args are "local" or "remote"
               substituteOnTarget = true; # if buildOn is "local" then it will substitute on the target, "-s"
               hermetic = false;
@@ -90,6 +94,11 @@ Connection to itchy.scratchy.com closed.
 - `sshUser` *`string`*
 
    A string representing the username a machine to connect to via ssh.
+
+- `sshConfigHost` *`string`*
+
+   A string representing an entry in ssh config. If provided, it takes precedence
+   over `host` and `sshUser`.
 
 - `buildOn` *`"remote"`* or *`"local"`*
 
