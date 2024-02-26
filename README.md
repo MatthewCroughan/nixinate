@@ -87,6 +87,10 @@ Connection to itchy.scratchy.com closed.
    A string representing the hostname or IP address of a machine to connect to
    via ssh.
 
+- `port` *`number`*
+
+   A number representing the port of the machine to connect to, by default set to 22
+
 - `sshUser` *`string`*
 
    A string representing the username a machine to connect to via ssh.
