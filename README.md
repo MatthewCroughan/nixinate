@@ -114,6 +114,14 @@ Connection to itchy.scratchy.com closed.
   built a lot of the paths from the previous deployment. However, if the remote
   has a slow upload bandwidth, this would not be a good idea to enable.
 
+- `nixOptions` *`listOf strings`*
+
+  Extra options passed to all invocations of `nix`.
+
+- `sshOptions` *`listOfStrings`*
+
+  Extra options passed to all invocations of `ssh`.
+
 # Project Principles
 
 * No Premature Optimization: Make it work, then optimize it later if the
