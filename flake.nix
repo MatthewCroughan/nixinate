@@ -36,7 +36,9 @@
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
               hermetic = n.hermetic or true;
               user = n.sshUser or "root";
-              host = n.host;
+              host = n.host or "";
+              sshConfigHost = n.sshConfigHost or "";
+              userHost = if sshConfigHost != "" then sshConfigHost else if host != "" then "${user}@${host}" else abort "_module.args.nixinate.host or _module.args.nixinate.sshConfigHost must be set";
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               substituteOnTarget = n.substituteOnTarget or false;
@@ -47,22 +49,25 @@
               ''
                 set -e
                 echo "🚀 Deploying nixosConfigurations.${machine} from ${flake}"
+              '' + (if sshConfigHost != "" then ''
+                echo "🌐 SSH Config Host: ${sshConfigHost}"
+              ''  else ''
                 echo "👤 SSH User: ${user}"
                 echo "🌐 SSH Host: ${host}"
-              '' + (if remote then ''
+              '') + (if remote then ''
                 echo "🚀 Sending flake to ${machine} via nix copy:"
-                ( set -x; ${nix} ${nixOptions} copy ${flake} --to ssh://${user}@${host} )
+                ( set -x; ${nix} ${nixOptions} copy ${flake} --to ssh://${userHost} )
               '' + (if hermetic then ''
                 echo "🤞 Activating configuration hermetically on ${machine} via ssh:"
-                ( set -x; ${nix} ${nixOptions} copy --derivation ${nixos-rebuild} ${flock} --to ssh://${user}@${host} )
-                ( set -x; ${openssh} -t ${user}@${host} "sudo nix-store --realise ${nixos-rebuild} ${flock} && sudo ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine}" )
+                ( set -x; ${nix} ${nixOptions} copy --derivation ${nixos-rebuild} ${flock} --to ssh://${userHost} )
+                ( set -x; ${openssh} -t ${userHost} "sudo nix-store --realise ${nixos-rebuild} ${flock} && sudo ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine}" )
               '' else ''
                 echo "🤞 Activating configuration non-hermetically on ${machine} via ssh:"
-                ( set -x; ${openssh} -t ${user}@${host} "sudo flock -w 60 /dev/shm/nixinate-${machine} nixos-rebuild ${switch} --flake ${flake}#${machine}" )
+                ( set -x; ${openssh} -t ${userHost} "sudo flock -w 60 /dev/shm/nixinate-${machine} nixos-rebuild ${switch} --flake ${flake}#${machine}" )
               '')
               else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
-                ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
+                ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine} --target-host ${userHost} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
 
               '');
             in final.writeShellScript "deploy-${machine}.sh" script;
