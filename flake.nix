@@ -42,6 +42,7 @@
               substituteOnTarget = n.substituteOnTarget or false;
               switch = if dryRun then "dry-activate" else "switch";
               nixOptions = concatStringsSep " " (n.nixOptions or []);
+              flakeArgs = n.flakeArgs ? "";
 
               script =
               ''
@@ -55,14 +56,14 @@
               '' + (if hermetic then ''
                 echo "🤞 Activating configuration hermetically on ${machine} via ssh:"
                 ( set -x; ${nix} ${nixOptions} copy --derivation ${nixos-rebuild} ${flock} --to ssh://${user}@${host} )
-                ( set -x; ${openssh} -t ${user}@${host} "sudo nix-store --realise ${nixos-rebuild} ${flock} && sudo ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine}" )
+                ( set -x; ${openssh} -t ${user}@${host} "sudo nix-store --realise ${nixos-rebuild} ${flock} && sudo ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine}${flakeArgs}" )
               '' else ''
                 echo "🤞 Activating configuration non-hermetically on ${machine} via ssh:"
-                ( set -x; ${openssh} -t ${user}@${host} "sudo flock -w 60 /dev/shm/nixinate-${machine} nixos-rebuild ${switch} --flake ${flake}#${machine}" )
+                ( set -x; ${openssh} -t ${user}@${host} "sudo flock -w 60 /dev/shm/nixinate-${machine} nixos-rebuild ${switch} --flake ${flake}#${machine}${flakeArgs}" )
               '')
               else ''
                 echo "🔨 Building system closure locally, copying it to remote store and activating it:"
-                ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
+                ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flake}#${machine}${flakeArgs} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
 
               '');
             in final.writeShellScript "deploy-${machine}.sh" script;
