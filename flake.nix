@@ -42,7 +42,7 @@
               substituteOnTarget = n.substituteOnTarget or false;
               switch = if dryRun then "dry-activate" else "switch";
               nixOptions = concatStringsSep " " (n.nixOptions or []);
-              flakeArgs = n.flakeArgs ? "";
+              flakeArgs = n.flakeArgs or "";
 
               script =
               ''
