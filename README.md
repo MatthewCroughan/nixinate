@@ -3,7 +3,7 @@
 Nixinate is a proof of concept that generates a deployment script for each
 `nixosConfiguration` you already have in your flake, which can be ran via `nix
 run`, thanks to the `apps` attribute of the [flake
-schema](https://nixos.wiki/wiki/Flakes#Flake_schema).
+schema](https://wiki.nixos.org/wiki/Flakes#Flake_schema).
 
 ## Usage
 
