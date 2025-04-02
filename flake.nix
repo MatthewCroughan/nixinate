@@ -1,18 +1,18 @@
 {
-  description = "Nixinate your systems 🕶️";
+  description = "Nixinate your systems";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "git+https://forgejo.spacetime.technology/nix-mirrors/nixpkgs?ref=nixpkgs-unstable&shallow=1";
   };
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs = inputs:
     let
-      version = builtins.substring 0 8 self.lastModifiedDate;
+      #version = builtins.substring 0 8 self.lastModifiedDate;
       supportedSystems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
       forSystems = systems: f:
-        nixpkgs.lib.genAttrs systems
-        (system: f system nixpkgs.legacyPackages.${system});
+        inputs.nixpkgs.lib.genAttrs systems
+        (system: f system inputs.nixpkgs.legacyPackages.${system});
       forAllSystems = forSystems supportedSystems;
-      nixpkgsFor = forAllSystems (system: pkgs: import nixpkgs { inherit system; overlays = [ self.overlay ]; });
-    in rec
+      nixpkgsFor = forAllSystems (system: import inputs.nixpkgs { inherit system; overlays = [ inputs.self.overlay ]; });
+    in
     {
       herculesCI.ciSystems = [ "x86_64-linux" ];
       overlay = final: prev: {
@@ -36,7 +36,7 @@
               n = flake.nixosConfigurations.${machine}._module.args.nixinate;
               hermetic = n.hermetic or true;
               user = n.sshUser or "root";
-              host = n.host;
+              inherit (n) host;
               where = n.buildOn or "remote";
               remote = if where == "remote" then true else if where == "local" then false else abort "_module.args.nixinate.buildOn is not set to a valid value of 'local' or 'remote'";
               substituteOnTarget = n.substituteOnTarget or false;
@@ -68,46 +68,35 @@
 
               '');
             in final.writeShellScript "deploy-${machine}.sh" script;
-          in
-          {
-             nixinate =
-               (
-                 nixpkgs.lib.genAttrs
-                   validMachines
-                   (x:
-                     {
-                       type = "app";
-                       program = toString (mkDeployScript {
-                         machine = x;
-                         dryRun = false;
-                       });
-                     }
-                   )
-                   // nixpkgs.lib.genAttrs
-                      (map (a: a + "-dry-run") validMachines)
-                      (x:
-                        {
-                          type = "app";
-                          program = toString (mkDeployScript {
-                            machine = nixpkgs.lib.removeSuffix "-dry-run" x;
-                            dryRun = true;
-                          });
-                        }
-                      )
-               );
+          in {
+            nixinate = (
+              inputs.nixpkgs.lib.genAttrs validMachines (x: {
+                type = "app";
+                program = toString (mkDeployScript {
+                  machine = x;
+                  dryRun = false;
+                });
+              }) // inputs.nixpkgs.lib.genAttrs
+              (map (a: a + "-dry-run") validMachines) (x: {
+                type = "app";
+                program = toString (mkDeployScript {
+                  machine = inputs.nixpkgs.lib.removeSuffix "-dry-run" x;
+                  dryRun = true;
+                });
+              })
+            );
           };
         };
-      nixinate = forAllSystems (system: pkgs: nixpkgsFor.${system}.generateApps);
+      nixinate = forAllSystems (system: nixpkgsFor.${system}.generateApps);
       checks = forAllSystems (system: pkgs:
         let
           vmTests = import ./tests {
-            makeTest = (import (nixpkgs + "/nixos/lib/testing-python.nix") { inherit system; }).makeTest;
+            inherit (import (inputs.nixpkgs + "/nixos/lib/testing-python.nix") { inherit system; }) makeTest;
             inherit inputs; pkgs = nixpkgsFor.${system};
           };
         in
         pkgs.lib.optionalAttrs pkgs.stdenv.isLinux vmTests # vmTests can only be ran on Linux, so append them only if on Linux.
-        //
-        {
+        // {
           # Other checks here...
         }
       );

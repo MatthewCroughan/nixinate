@@ -56,8 +56,8 @@ let
           }
         '';
       };
-      deployScript = inputs.self.nixinate.${pkgs.hostPlatform.system} (callLocklessFlake "${exampleFlake}" { nixpkgs = inputs.nixpkgs; });
-      exampleSystem = (callLocklessFlake "${exampleFlake}" { nixpkgs = inputs.nixpkgs; }).nixosConfigurations.nixinatee.config.system.build.toplevel;
+      deployScript = inputs.self.nixinate.${pkgs.hostPlatform.system} (callLocklessFlake "${exampleFlake}" { inherit (inputs) nixpkgs; });
+      exampleSystem = (callLocklessFlake "${exampleFlake}" { inherit (inputs) nixpkgs; }).nixosConfigurations.nixinatee.config.system.build.toplevel;
     in
     makeTest {
       nodes = {
@@ -70,8 +70,8 @@ let
             writableStore = true;
             additionalPaths = []
               ++ lib.optional (buildOn == "remote") (allDrvOutputs exampleSystem)
-              ++ lib.optional (hermetic == true) (pkgs.nixinate.nixos-rebuild.drvPath)
-              ++ lib.optional (hermetic == true) (pkgs.flock.drvPath);
+              ++ lib.optional hermetic pkgs.nixinate.nixos-rebuild.drvPath
+              ++ lib.optional hermetic pkgs.flock.drvPath;
           };
         };
         nixinator = { ... }: {
@@ -83,7 +83,7 @@ let
               (allDrvOutputs exampleSystem)
             ]
               ++ lib.optional (buildOn == "remote") exampleFlake
-              ++ lib.optional (hermetic == true) pkgs.flock.drvPath;
+              ++ lib.optional hermetic pkgs.flock.drvPath;
           };
         };
       };
@@ -109,8 +109,8 @@ let
     };
 in
 {
-  local = (mkNixinateTest { buildOn = "local"; });
-  remote = (mkNixinateTest { buildOn = "remote"; });
-  localHermetic = (mkNixinateTest { buildOn = "local"; hermetic = true; });
-  remoteHermetic = (mkNixinateTest { buildOn = "remote"; hermetic = true; });
+  local = mkNixinateTest { buildOn = "local"; };
+  remote = mkNixinateTest { buildOn = "remote"; };
+  localHermetic = mkNixinateTest { buildOn = "local"; hermetic = true; };
+  remoteHermetic = mkNixinateTest { buildOn = "remote"; hermetic = true; };
 }
