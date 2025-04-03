@@ -2,23 +2,41 @@
   "nodes": {
     "nixpkgs": {
       "locked": {
-        "lastModified": 1653060744,
-        "narHash": "sha256-kfRusllRumpt33J1hPV+CeCCylCXEU7e0gn2/cIM7cY=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "dfd82985c273aac6eced03625f454b334daae2e8",
-        "type": "github"
+        "lastModified": 1743259260,
+        "narHash": "sha256-ArWLUgRm1tKHiqlhnymyVqi5kLNCK5ghvm06mfCl4QY=",
+        "ref": "nixpkgs-unstable",
+        "rev": "eb0e0f21f15c559d2ac7633dc81d079d1caf5f5f",
+        "shallow": true,
+        "type": "git",
+        "url": "https://forgejo.spacetime.technology/nix-mirrors/nixpkgs"
       },
       "original": {
-        "owner": "nixos",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
+        "ref": "nixpkgs-unstable",
+        "shallow": true,
+        "type": "git",
+        "url": "https://forgejo.spacetime.technology/nix-mirrors/nixpkgs"
       }
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "system": "system"
+      }
+    },
+    "system": {
+      "locked": {
+        "lastModified": 1732204055,
+        "narHash": "sha256-mHtkcHm37MDme/NSxU7hFU8SxM9GaX5tjznWAWBCxc8=",
+        "ref": "refs/heads/master",
+        "rev": "19d677525610a6169835e353678bf463600489ac",
+        "shallow": true,
+        "type": "git",
+        "url": "https://forgejo.spacetime.technology/arbel/nix-system"
+      },
+      "original": {
+        "shallow": true,
+        "type": "git",
+        "url": "https://forgejo.spacetime.technology/arbel/nix-system"
       }
     }
   },
