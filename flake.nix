@@ -5,19 +5,14 @@
     system.url = "git+https://forgejo.spacetime.technology/arbel/nix-system?shallow=1";
   };
   outputs = inputs: let
-      #version = builtins.substring 0 8 self.lastModifiedDate;
-      supportedSystems = inputs.system.arches;
-      forSystems = systems: f:
-        inputs.nixpkgs.lib.genAttrs systems
-        (system: f system inputs.nixpkgs.legacyPackages.${system});
-      forAllSystems = forSystems supportedSystems;
+      forAllSystems = f:
+        inputs.nixpkgs.lib.genAttrs inputs.system.arches (system: f system inputs.nixpkgs.legacyPackages.${system});
       nixpkgsFor = forAllSystems (system: pkgs: import inputs.nixpkgs { inherit system; overlays = [ inputs.self.overlay ]; });
   in {
     herculesCI.ciSystems = [ "x86_64-linux" ];
     overlay = final: prev: {
       nixinate = {
-        nix = prev.pkgs.writeShellScriptBin "nix"
-          ''${final.nixVersions.unstable}/bin/nix --experimental-features "nix-command flakes" "$@"'';
+        nix = prev.pkgs.writeShellScriptBin "nix" ''${final.nixVersions.unstable}/bin/nix --experimental-features "nix-command flakes" "$@"'';
         nixos-rebuild = prev.nixos-rebuild.override { inherit (final) nix; };
       };
       generateApps = flake: let
@@ -30,7 +25,6 @@
             nixos-rebuild = "${getExe final.nixos-rebuild}";
             openssh = "${getExe final.openssh}";
             flock = "${getExe final.flock}";
-
             n = flake.nixosConfigurations.${machine}._module.args.nixinate;
             hermetic = n.hermetic or true;
             user = n.sshUser or "root";
@@ -42,9 +36,8 @@
             nixOptions = concatStringsSep " " (n.nixOptions or []);
             flakeArgs = n.flakeArgs or "";
             flakePath = n.flakePath or flake;
-
-            script =
-            ''
+          in final.writeShellScript "deploy-${machine}.sh"
+           (''
               set -e
               printf "🚀 Deploying nixosConfigurations.${machine} from ${flake}\n👤 SSH User: ${user}\n🌐 SSH Host: ${host}\n"
             '' + (if remote then ''
@@ -62,8 +55,7 @@
               echo "🔨 Building system closure locally, copying it to remote store and activating it:"
               ( set -x; NIX_SSHOPTS="-t" ${flock} -w 60 /dev/shm/nixinate-${machine} ${nixos-rebuild} ${nixOptions} ${switch} --flake ${flakePath}${flakeArgs}#${machine} --target-host ${user}@${host} --use-remote-sudo ${optionalString substituteOnTarget "-s"} )
 
-            '');
-          in final.writeShellScript "deploy-${machine}.sh" script;
+            ''));
         in {
           nixinate = (
             inputs.nixpkgs.lib.genAttrs validMachines (x: {
