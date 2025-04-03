@@ -3,7 +3,7 @@
 Nixinate is a proof of concept that generates a deployment script for each
 `nixosConfiguration` you already have in your flake, which can be ran via `nix
 run`, thanks to the `apps` attribute of the [flake
-schema](https://nixos.wiki/wiki/Flakes#Flake_schema).
+schema](https://wiki.nixos.org/wiki/Flakes#Flake_schema).
 
 ## Usage
 
@@ -17,8 +17,8 @@ Below is a minimal example:
 ```nix
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
-    nixinate.url = "github:matthewcroughan/nixinate";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixinate.url = "git+https://forgejo.spacetime.technology/arbel/nixinate?shallow=1";
   };
 
   outputs = { self, nixpkgs, nixinate }: {
@@ -113,9 +113,3 @@ Connection to itchy.scratchy.com closed.
   locally. This makes sense in most cases, because the remote will have already
   built a lot of the paths from the previous deployment. However, if the remote
   has a slow upload bandwidth, this would not be a good idea to enable.
-
-# Project Principles
-
-* No Premature Optimization: Make it work, then optimize it later if the
-  optimization is taking a lot of time to figure out now.
-* KISS: Keep it simple, stupid. Unnecesary complexity should be avoided.
